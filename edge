@@ -1,0 +1,340 @@
+#include<stdio.h>  
+#include<stdlib.h>  
+#include<string.h>  
+#include<errno.h>  
+#include<sys/types.h>  
+#include<sys/socket.h>  
+#include<netinet/in.h>
+#include<netinet/in.h>
+#include<arpa/inet.h>
+#include<netdb.h>
+#include<stdio.h>  
+#define PORT_etcp “23032”
+#define PORT_eudp "24032"
+#define PORT_or "21032"
+#define PORT_and "22032"
+#define HOST "localhost" 
+
+int main()  
+{   
+    int    socket_fd, connect_fd;  
+    struct sockaddr_in     servaddr;  
+    char    buff_tcp[3000];  
+    int     n_edge;  
+    //creat tcp socket----from http://blog.csdn.net/hguisu/article/details/7445768/ 
+    if( (socket_fd = socket(AF_INET, SOCK_STREAM, 0)) == -1 ){  
+    printf("create socket error: %s(errno: %d)\n",strerror(errno),errno);  
+    exit(0);  
+    }  
+  
+    memset(&servaddr, 0, sizeof(servaddr));  
+    servaddr.sin_family = AF_INET;  
+    servaddr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    servaddr.sin_port = htons(23032);
+  
+    //bind  
+    if( bind(socket_fd, (struct sockaddr*)&servaddr, sizeof(servaddr)) == -1){  
+    printf("bind socket error: %s(errno: %d)\n",strerror(errno),errno);  
+    exit(0);  
+    }  
+    //listen
+    if( listen(socket_fd, 10) == -1){  
+    printf("listen socket error: %s(errno: %d)\n",strerror(errno),errno);  
+    exit(0);  
+    }  
+    printf("The edge server is up and running.\n");  
+    while(1){  
+// blocking
+        if( (connect_fd = accept(socket_fd, (struct sockaddr*)NULL, NULL)) == -1){  
+        printf("accept socket error: %s(errno: %d)",strerror(errno),errno);  
+        continue;  
+    }  
+//receive information from client
+    n_edge = recv(connect_fd, buff_tcp, 3000, 0);
+
+char buff_or[3000]="";
+char buff_and[3000]="";
+char recand[3000];
+char recor[3000];
+///////////////////split the data line by line and put and/or data separately 
+   char and[100][100];
+   char or[100][100];
+	char temp[100][100];
+
+
+	char *p=buff_tcp;
+	int length_zi=0;
+	
+	int line=0,num=0;
+	while(*p!='\0'){
+		length_zi++;
+		p++;
+		if(*p==','){
+			num++;
+		}
+		if(num==3){
+			strncpy(temp[line],p-length_zi,length_zi);
+			length_zi=0;
+			line++;
+			num=0;
+			p++;
+		}
+	}// while
+/////////
+printf("The edge server has received %d lines from the client using TCP over port 23032.\n",line);
+///////
+int k=0;
+int len_a=0;
+int len_b=0;
+int i;
+int ii;
+int iii;
+int ld;
+int ling;
+	for(i=0;i<line;i++)
+	//printf("%s\n",temp[i]);	
+////////////////
+{ //printf("%s\n",temp[i]);
+  if (temp[i][0]=='a')
+   { 
+     k=4;
+     while(temp[i][k]!=',')
+       {  k=k+1;
+        }
+       len_a=k-4;
+     while(temp[i][k]!='\0')
+         { k=k+1;
+          }
+         len_b=k-5-len_a;
+      // printf("%d,%d\n",len_a,len_b);
+    //////add 0 to make two number with same length:
+    if (len_a>len_b)
+       {  ld=len_a-len_b;
+          
+          for(ii=4+len_a+len_b;ii>4+len_a;ii--)
+           {
+            temp[i][ii+ld]=temp[i][ii];
+           }
+          for(iii=5+len_a;iii<5+len_a+ld;iii++)
+             {temp[i][iii]='0';}
+        }
+    else if(len_a<len_b)
+       { ld=len_b-len_a;
+        for(ii=4+len_a+len_b;ii>3;ii--)
+           {
+            temp[i][ii+ld]=temp[i][ii];
+           }
+          for(iii=4;iii<4+ld;iii++)
+             {temp[i][iii]='0';} 
+       }
+    //printf("%s\n",temp[i]);
+    strcpy(and[i],temp[i]);
+    
+    }
+  else
+    {  
+       k=3;
+      while(temp[i][k]!=',')
+       { k=k+1;
+        }
+      len_a=k-3;
+      while(temp[i][k]!='\0')
+         { k=k+1;
+          }
+         len_b=k-4-len_a;
+     //  printf("%d,%d\n",len_a,len_b);
+
+     if (len_a>len_b)
+       {  ld=len_a-len_b;
+          
+          for(ii=3+len_a+len_b;ii>3+len_a;ii--)
+           {
+            temp[i][ii+ld]=temp[i][ii];
+           }
+          for(iii=4+len_a;iii<4+len_a+ld;iii++)
+             {temp[i][iii]='0';}
+        }
+    else if(len_a<len_b)
+       { ld=len_b-len_a;
+        for(ii=3+len_a+len_b;ii>2;ii--)
+           {
+            temp[i][ii+ld]=temp[i][ii];
+           }
+          for(iii=3;iii<3+ld;iii++)
+             {temp[i][iii]='0';} 
+       }
+    //printf("%s\n",temp[i]);
+    strcpy(or[i],temp[i]); 
+    //printf("%s\n",or[i]);
+     }
+
+  }
+
+///////////////put data finished adding 0 to OR and AND separately
+  int fenkai;
+ int and_line=0;
+  int or_line=0;
+  for (fenkai=0;fenkai<line;fenkai++)
+  {  if(temp[fenkai][0]=='a')
+     { 
+       strcpy(and[and_line],temp[fenkai]);
+      and_line++;
+      }//if
+     else
+     { strcpy(or[or_line],temp[fenkai]);
+       or_line++;
+       }
+     }
+//printf("%d,%d\n",and_line,or_line);
+////////////////put data for and serser to one line to send:
+int and_p;
+int nn_a;
+for(and_p=1;and_p<and_line;and_p++)
+  { nn_a=strlen(and[0]);
+    and[0][nn_a]=',';
+    strcat(and[0],and[and_p]);
+   }
+nn_a=strlen(and[0]);
+    and[0][nn_a]=',';/////////add,to the last
+//printf("%s",and[0]);
+//char buff_and[256];
+strcat(buff_and,and[0]);
+//printf("%s",buff_and);
+//printf("\n");
+/////////////////put data for or server to one line to send:
+int or_p;
+int nn_o;
+for(or_p=1;or_p<or_line;or_p++)
+  { nn_o=strlen(or[0]);
+    or[0][nn_o]=',';
+    strcat(or[0],or[or_p]);
+   }
+nn_o=strlen(or[0]);
+    or[0][nn_o]=',';/////////add,to the last
+//char buff_or[256];
+strcat(buff_or,or[0]);
+//printf("%s",or[0]);
+//printf("\n");
+
+////////////////////////////////////////
+
+///////////empty the receive buffer
+memset(buff_tcp,0,sizeof(buff_tcp));
+//printf("%s\n", buff_tcp);
+
+//////////////set up udp with or server: ----from https://www.youtube.com/watch?v=Emuw71lozdA
+int sock, length, n_or;
+    struct sockaddr_in server, from;
+    struct hostent *hp;
+    //char buff_or[3000];
+
+    sock=socket(AF_INET,SOCK_DGRAM,0);
+
+    if (sock<0)
+    {
+        error("socket");
+    }
+
+    server.sin_family=AF_INET;
+    hp=gethostbyname(HOST);
+
+    if(hp==0)
+    {
+        error("Unknown host");
+    }
+
+bcopy((char *)hp->h_addr,(char *)&server.sin_addr,hp->h_length);
+server.sin_port=htons(atoi(PORT_or));
+length=sizeof(struct sockaddr_in);
+
+//char buff_or[3000]="Hello OR server!";
+n_or=sendto(sock,buff_or,strlen(buff_or),0,&server,length);
+if(n_or<0)
+{
+    error("Sendto");
+}
+///////////empty the send buffer
+memset(buff_or,0,sizeof(buff_or));
+printf("The edge has successfully sent %d lines to Backend Server OR.\n",or_line);
+printf("The edge server start receiving the computation results from Backend-server OR and Backend-sever AND using UDP port 24032.\n");
+n_or=recvfrom(sock,recor,3000,0,&from,&length);
+if(n_or<0)
+{
+    error("recvfrom");
+}
+//printf("%s\n",recor);
+
+/////////////////set up udp with and server: ----from https://www.youtube.com/watch?v=Emuw71lozdA
+int sockand;
+    struct sockaddr_in serverand, fromand;
+    //struct hostent *hp;
+    //char buff_and[3000];
+
+    sockand=socket(AF_INET,SOCK_DGRAM,0);
+
+    if (sockand<0)
+    {
+        error("socket");
+    }
+
+    serverand.sin_family=AF_INET;
+    serverand.sin_addr.s_addr=inet_addr(HOST);
+
+
+server.sin_port=htons(atoi(PORT_and));
+int len_and;
+len_and=sizeof(struct sockaddr_in);
+int n_a;
+//char buff_and[3000]="Hello AND server!";
+n_a=sendto(sockand,buff_and,strlen(buff_and),0,&server,len_and);
+if(n_a<0)
+{
+    error("Sendto");
+}
+///////////empty the send buffer
+memset(buff_and,0,sizeof(buff_and));
+/////////////////////////////////////
+printf("The edge has successfully sent %d lines to Backend Server AND.\n",and_line);
+
+n_a=recvfrom(sockand,recand,3000,0,&fromand,&len_and);
+if(n_a<0)
+{
+    error("recvfrom");
+}
+//printf("%s\n",recand);
+strcat(recand,recor); ////////put all data together to one line to send back to client
+////////////////print the received data line by line:
+printf("The computation results are:\n");
+   char egout[100];
+   char *out=recand;
+   int outlen;
+   int hang;
+  for(hang=1;hang<line+1;hang++)
+  { memset(egout,0,sizeof(egout));
+    outlen=0;
+    while(*out!=',')
+    { outlen++;
+     out++;
+    }//while
+    strncpy(egout,out-outlen,outlen);
+    out++;
+    printf("%s\n",egout);
+   }//for
+//////////////////////////
+
+printf("The edge server has sucessfully finish receiving all computation results from the Backe-server OR and Back-server AND.\n");
+//send back to client 
+    if(!fork()){  
+        if(send(connect_fd,recand, 3000,0) == -1)  
+        perror("send error");  
+        close(connect_fd);  
+        exit(0);  
+    }  
+///////////empty the send and receive buffer
+memset(recor,0,sizeof(recor));
+memset(recand,0,sizeof(recand));
+printf("The edge server has sucessfully finish sending all computation results to the client.\n");
+    close(connect_fd);
+    }  
+    close(socket_fd); 
+}  
