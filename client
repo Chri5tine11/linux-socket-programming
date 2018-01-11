@@ -1,0 +1,143 @@
+#include<stdio.h>  
+#include<stdlib.h>  
+#include<string.h>  
+#include<stdio.h>  
+#include<stdlib.h>  
+#include<string.h>  
+#include<errno.h>  
+#include<sys/types.h>  
+#include<sys/socket.h>  
+#include<netinet/in.h>  
+
+#define HOST "localhost"
+  
+int main(int argc, char *argv[])  
+{ 
+     if (argc != 2) {
+        fprintf(stderr,"Please input the name of source txt file.\n");
+        exit(1);
+    }
+    
+    
+    int    sockfd, n,rec_len;    
+    char    buff_send[3000]; 
+    char   recin[3000]; 
+    struct sockaddr_in    servaddr;  
+  
+    if( (sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0){  
+    printf("create socket error: %s(errno: %d)\n", strerror(errno),errno);  
+    exit(0);  
+    }  
+  
+  
+    memset(&servaddr, 0, sizeof(servaddr));  
+    servaddr.sin_family = AF_INET;  
+    servaddr.sin_port = htons(23032);  
+  
+    if( connect(sockfd, (struct sockaddr*)&servaddr, sizeof(servaddr)) < 0){  
+    printf("connect error: %s(errno: %d)\n",strerror(errno),errno);  
+    exit(0);  
+    }  
+  //read data
+   printf("The client is up and running.\n");
+   char s[256][256];
+   char read[256];
+   FILE *fp;
+   int nn;
+   fp=fopen(argv[1],"r");
+   if(fp==NULL)
+  {  printf("Cannot open file.");
+   exit(1);
+  }
+ int h=0;
+  while((fgets(read,256,fp))!=NULL)
+ { 
+   strcpy(s[h],read);
+  h++;
+ }
+//printf("%d\n",h);
+//printf("%s",s[0]);
+fclose(fp);
+int i;
+for(i=1;i<h;i++)
+  { nn=strlen(s[0]);
+    s[0][nn-1]=',';
+    strcat(s[0],s[i]);
+   }
+nn=strlen(s[0]);
+    s[0][nn-1]=',';
+//printf("%s\n",s[0]);
+strcpy(buff_send,s[0]);
+int len;
+len=strlen(buff_send);
+send(sockfd,buff_send,len,0);
+printf("The client has successfully finish sending %d lines to the edge server.\n",h);
+//printf("\n");
+///////////empty the send buffer
+memset(buff_send,0,sizeof(buff_send));
+
+    if((rec_len = recv(sockfd,recin, 3000,0)) == -1) {  
+       perror("recv error");  
+       exit(1);  
+    }  
+    //buf[rec_len]  = '\0'; 
+ printf("The client has successfully finish receiving all computation results from the edge server.\n");
+    //printf("%s\n",recin); 
+/////////////////////print the final results with sequence.
+int cixu[100];
+int ci;
+int pa[100];
+int numaa=0;
+int numoo=0;
+int po[100];
+int tt;
+for(ci=0;ci<h;ci++)
+    { if(s[ci][0]=='a')
+        { pa[numaa]=ci+1;
+          numaa++;
+         }//if
+       else if (s[ci][0]=='o')
+       { po[numoo]=ci+1;
+          numoo++;
+         }//elseif
+    }//for
+for(tt=0;tt<numaa;tt++)
+    {cixu[tt]=pa[tt];
+//printf("%d\n",pa[tt]);
+    }//for
+//printf("\n");
+for(tt=numaa;tt<numaa+numoo;tt++)
+   { cixu[tt]=po[tt-numaa];}
+
+
+//=================================================
+printf("The final computation results are:\n");	
+int num_d=0;
+int p_len;
+char *p=recin;
+char cli_res[100][100];
+
+	tt=0;
+	while(*p!='\0'){
+		while(*p!='=')
+			p++;  
+                p_len=0;
+		while(*p!=','){  
+			p++;
+                        p_len++;
+                }//while,
+	strncpy(cli_res[cixu[tt]-1], p-(p_len)+2, p_len-2);
+	tt++;
+	p++;
+	} //while
+for(tt=0;tt<h;tt++)
+printf("%s\n",cli_res[tt]);
+
+	
+	
+///////////empty the receive buffer
+memset(recin,0,sizeof(recin));	
+///////////////////// 
+    close(sockfd);  
+    exit(0);  
+}  
