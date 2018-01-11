@@ -1,0 +1,168 @@
+#include<stdio.h>
+#include<stdlib.h>
+#include<string.h>
+#include<sys/socket.h> 
+#include<sys/types.h>
+#include<arpa/inet.h>
+#include <unistd.h>
+#include <errno.h>
+#include <string.h>
+#include <netdb.h>
+#include <netinet/in.h>
+#include <sys/wait.h>
+
+
+#define Port_and "22032"
+
+
+int main()
+{
+	int sockand, length, fromlen, n;
+	struct sockaddr_in server;
+	struct sockaddr_in from;
+	char buff_and[3000];
+        char sendbuff[3000];
+
+	sockand=socket(AF_INET,SOCK_DGRAM,0);
+	if(sockand<0)
+	{
+		error("Opening socket");
+	}
+	length=sizeof(server);
+	bzero(&server,length);
+	server.sin_family=AF_INET;
+	server.sin_addr.s_addr=INADDR_ANY;
+	server.sin_port=htons(atoi(Port_and));
+	if(bind(sockand,(struct sockaddr *)&server, length)<0)
+	{
+		error("binding");
+	}
+	fromlen= sizeof(struct sockaddr_in);
+        printf("The Server AND is up and running using UDP on port 22032.\n");
+        
+	while(1)
+	{
+		n=recvfrom(sockand,buff_and,3000,0,(struct sockaddr *)&from,&fromlen);
+		if(n<0)
+		{
+			error("recvfrom");
+		}
+printf("The Server AND start receiving lines from the edge server for and compution.\n");
+printf("The computation results are:\n");
+/////////////////////////////////caculate the received data
+	char temp[100][100];
+      
+	char *p=buff_and;
+	int length_zifu=0;
+	
+	int line_and=0,num=0;
+	while(*p!='\0'){
+		length_zifu++;
+		p++;
+		if(*p==','){
+			num++;
+		}
+		if(num==3){
+			strncpy(temp[line_and],p-length_zifu,length_zifu);
+			length_zifu=0;
+			line_and++;
+			num=0;
+			p++;
+		}
+	   }// while
+
+////spilit the received data line by line by judging the numbers of ',':
+int and_i;
+int and_k;
+int len_and=0;
+int and_rr;
+char new[100];
+char numt[100];
+char output[100][100];
+char result[100];
+int paone;
+//int panling=0;
+int weishu;
+for(and_i=0;and_i<line_and;and_i++)
+  {  memset(new,0,sizeof(int)*100);
+     memset(result,0,sizeof(int)*100);
+     strcpy(new,temp[and_i]);
+    and_k=4;
+    while(temp[and_i][and_k]!=',')
+      { 
+        and_k++; 
+       }
+  len_and=and_k-4;
+// printf("%s\n",new);
+//printf("%d\n",len_and);
+
+//////////////////////////remove 0 before 1 to print out:
+paone=4;
+  while(new[paone]=='0'&&paone<(len_and+4))
+      { paone++;
+      }//while
+    if(paone==(len_and+4))
+     strcpy(output[and_i],"0");
+    else
+    strncpy(output[and_i],new+paone,len_and+4-paone);
+
+////found the first number without 0 before 1.
+    strcat(output[and_i]," and ");
+ paone=5+len_and;
+while(new[paone]=='0'&&paone<(2*len_and+5))
+      { paone++;
+      }//while
+    if(paone==(2*len_and+5))
+     strcat(output[and_i],"0");
+    else
+    {strncpy(numt,new+paone,2*len_and+5-paone);
+     strcat(output[and_i],numt);
+    }//else
+//////////////////found the second number wihout 0 before 1.
+//////caculate the result to print out:
+for(and_rr=4;and_rr<4+len_and;and_rr++)
+      {  
+         if((temp[and_i][and_rr])!=(temp[and_i][and_rr+len_and+1]))
+         new[and_rr]='0';
+      }//for
+///////////////////////
+strcat(output[and_i]," = ");
+paone=4;
+  while(new[paone]=='0'&&paone<(len_and+4))
+      { paone++;
+      }//while
+    if(paone==(len_and+4))
+     strcat(output[and_i],"0");
+    else
+    {strncpy(result,new+paone,len_and+4-paone);
+     strcat(output[and_i],result);
+    }//else
+printf("%s\n",output[and_i]);
+
+ }//for
+printf("The Server AND has sucessfully received %d lines from the edge server and finished all AND computations.\n",line_and);
+////////////put all date together to one line to send:
+	int and_p;
+int nn_a;
+for(and_p=1;and_p<line_and;and_p++)
+  { nn_a=strlen(output[0]);
+    output[0][nn_a]=',';
+    strcat(output[0],output[and_p]);
+   }
+nn_a=strlen(output[0]);
+    output[0][nn_a]=',';/////////add,to the last
+//printf("%s\n",output[0]);
+	strcpy(sendbuff,output[0]);
+///////////sendto edge
+		n=sendto(sockand,sendbuff,3000,0,(struct sockaddr *)&from,fromlen);
+		if (n<0)
+		{
+			error("sendto");
+		}
+///////////empty the send buffer
+memset(sendbuff,0,sizeof(sendbuff));
+///////////empty the receive buffer
+memset(buff_and,0,sizeof(buff_and));
+  printf("The Server AND has sucessfully sending all computation results to the edge server.\n");
+	}//while(1)
+}
