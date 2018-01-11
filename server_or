@@ -1,0 +1,163 @@
+#include<stdio.h>
+#include<stdlib.h>
+#include<string.h>
+#include<sys/socket.h> 
+#include<sys/types.h>
+#include<arpa/inet.h>
+#include <unistd.h>
+#include <errno.h>
+#include <string.h>
+#include <netdb.h>
+#include <netinet/in.h>
+#include <sys/wait.h>
+#define Port_or "21032"
+
+int main()
+{
+  int sock, length, fromlen, n;
+  struct sockaddr_in server;
+  struct sockaddr_in from;
+  char buff_or[3000];
+  char sendbuff[3000];
+
+  sock=socket(AF_INET,SOCK_DGRAM,0);
+  if(sock<0)
+  {
+    error("Opening socket");
+  }
+  length=sizeof(server);
+  bzero(&server,length);
+  server.sin_family=AF_INET;
+  server.sin_addr.s_addr=INADDR_ANY;
+  server.sin_port=htons(atoi(Port_or));
+  if(bind(sock,(struct sockaddr *)&server, length)<0)
+  {
+    error("binding");
+  }
+  fromlen= sizeof(struct sockaddr_in);
+        printf("The Server OR is up and running using UDP on port 21032\n");
+  while(1)
+  {
+    n=recvfrom(sock,buff_or,3000,0,(struct sockaddr *)&from,&fromlen);
+    if(n<0)
+    {
+      error("recvfrom");
+    }
+printf("The Server OR start receiving lines from the edge server for or compution.\n");
+printf("The computation results are:\n");
+///////////////////////////////////caculate the received data
+char temp[100][100];
+      
+	char *p=buff_or;
+	int length_zifu=0;
+	
+	int line_or=0,num=0;
+	while(*p!='\0'){
+		length_zifu++;
+		p++;
+		if(*p==','){
+			num++;
+		}
+		if(num==3){
+			strncpy(temp[line_or],p-length_zifu,length_zifu);
+			length_zifu=0;
+			line_or++;
+			num=0;
+			p++;
+		}
+	   }// while
+
+
+////spilit the received data line by line by judging the numbers of ',':
+int or_i;
+int or_k;
+int len_or=0;
+int or_rr;
+char new[100];
+char numt[100];
+char output[100][100];
+char result[100];
+int paone;
+int weishu;
+for(or_i=0;or_i<line_or;or_i++)
+  {  memset(new,0,sizeof(int)*100);
+     memset(result,0,sizeof(int)*100);
+     strcpy(new,temp[or_i]);
+    or_k=3;
+    while(temp[or_i][or_k]!=',')
+      { 
+        or_k++; 
+       }
+  len_or=or_k-3;
+// printf("%s\n",new);
+//printf("%d\n",len_or);
+///////////////////////////remove 0 before 1 to print out:
+paone=3;
+  while(new[paone]=='0'&&paone<(len_or+3))
+      { paone++;
+      }//while
+    if(paone==(len_or+3))
+     strcpy(output[or_i],"0");
+    else
+    strncpy(output[or_i],new+paone,len_or+3-paone);
+
+////found the first number without 0 before 1.
+    strcat(output[or_i]," or ");
+ paone=4+len_or;
+while(new[paone]=='0'&&paone<(2*len_or+4))
+      { paone++;
+      }//while
+    if(paone==(2*len_or+4))
+     strcat(output[or_i],"0");
+    else
+    {strncpy(numt,new+paone,2*len_or+4-paone);
+     strcat(output[or_i],numt);
+    }//else
+/////////////found the second number wihout 0 before 1.
+//////caculate the result to print out:
+for(or_rr=3;or_rr<3+len_or;or_rr++)
+      {  
+         if((temp[or_i][or_rr])!=(temp[or_i][or_rr+len_or+1]))
+         new[or_rr]='1';
+      }//for
+///////////////////////
+strcat(output[or_i]," = ");
+paone=3;
+  while(new[paone]=='0'&&paone<(len_or+3))
+      { paone++;
+      }//while
+    if(paone==(len_or+3))
+     strcat(output[or_i],"0");
+    else
+    {strncpy(result,new+paone,len_or+3-paone);
+     strcat(output[or_i],result);
+    }//else
+printf("%s\n",output[or_i]);
+
+ }//for
+
+printf("The Server OR has sucessfully received %d lines from the edge server and finished all OR computations.\n",line_or);
+///////////////////////////////////put all date together to one line to send:
+    int or_p;
+int nn_o;
+for(or_p=1;or_p<line_or;or_p++)
+  { nn_o=strlen(output[0]);
+    output[0][nn_o]=',';
+    strcat(output[0],output[or_p]);
+   }
+nn_o=strlen(output[0]);
+    output[0][nn_o]=',';/////////add,to the last
+strcat(sendbuff,output[0]);
+//////////send back to edge
+    n=sendto(sock,sendbuff,3000,0,(struct sockaddr *)&from,fromlen);
+    if (n<0)
+    {
+      error("sendto");
+    }
+///////////empty the send buffer
+memset(sendbuff,0,sizeof(sendbuff));
+///////////empty the receive buffer
+memset(buff_or,0,sizeof(buff_or));
+   printf("The Server OR has sucessfully sending all computation results to the edge server.\n");
+  }//while(1)
+}
